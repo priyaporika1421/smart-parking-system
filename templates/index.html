@@ -1,1 +1,72 @@
-
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Smart Parking System</title>
+<style>
+:root{--blue:#2563eb;--ink:#172033;--muted:#64748b;--bg:#f4f7fb}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Inter,Arial,sans-serif;color:var(--ink)}
+header{background:linear-gradient(120deg,#14213d,#2563eb);color:#fff;padding:28px max(22px,calc((100% - 1150px)/2))}
+header h1{margin:0 0 8px;font-size:clamp(24px,4vw,34px)}header p{margin:0;color:#dbeafe}
+main{max-width:1150px;margin:26px auto;padding:0 18px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;box-shadow:0 5px 18px #1720330a}
+.stat-label{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.07em}.stat-num{font-size:32px;font-weight:800;margin-top:7px}
+.columns{display:grid;grid-template-columns:330px 1fr;gap:18px}.card h2{font-size:19px;margin:0 0 16px}
+label{display:block;font-size:13px;font-weight:700;margin:13px 0 7px}input,select{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:white}
+.check{display:flex;align-items:center;gap:9px;font-weight:500}.check input{width:auto}
+button{border:0;border-radius:9px;padding:12px 14px;background:var(--blue);color:white;font-weight:700;cursor:pointer;width:100%;margin-top:13px}
+button.secondary{background:#eaf1ff;color:#1d4ed8}button.release{background:#fff1f2;color:#be123c}
+.flash{padding:12px 14px;border-radius:10px;margin-bottom:12px;background:#eff6ff;color:#1d4ed8}.flash.error{background:#fff1f2;color:#be123c}.flash.success{background:#ecfdf5;color:#047857}
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-bottom:15px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.slot{padding:16px 8px;border-radius:12px;text-align:center;color:#fff;min-height:96px;display:flex;flex-direction:column;justify-content:center;gap:5px}.slot b{font-size:17px}.slot small{font-size:11px}.occupied{background:#dc2626}.ev{background:#0ea5e9}.available{background:#16a34a}
+.hint{font-size:12px;color:var(--muted);line-height:1.5;margin-top:14px}
+@media(max-width:760px){.columns{grid-template-columns:1fr}.stats{gap:8px}.card{padding:15px}.stat-num{font-size:26px}.grid{gap:7px}.slot{padding:10px 4px;min-height:85px}}
+</style>
+</head>
+<body>
+<header><h1>🚗 AI-Based Smart Parking</h1><p>Automatic slot allocation using Constraint Satisfaction Problem (CSP)</p></header>
+<main>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
+{% endwith %}
+<section class="stats">
+  <div class="card"><div class="stat-label">TOTAL SLOTS</div><div class="stat-num">{{ stats.total }}</div></div>
+  <div class="card"><div class="stat-label">AVAILABLE</div><div class="stat-num" style="color:#16a34a">{{ stats.available }}</div></div>
+  <div class="card"><div class="stat-label">OCCUPIED</div><div class="stat-num" style="color:#dc2626">{{ stats.occupied }}</div></div>
+</section>
+<section class="columns">
+  <div class="card">
+    <h2>Manage Parking</h2>
+    <form action="{{ url_for('park') }}" method="post">
+      <label for="vehicle_number">Vehicle Number</label>
+      <input id="vehicle_number" name="vehicle_number" placeholder="e.g. TS09AB1234" required maxlength="20">
+      <label for="vehicle_type">Vehicle Type</label>
+      <select id="vehicle_type" name="vehicle_type"><option>Bike</option><option selected>Car</option><option>SUV</option></select>
+      <label class="check"><input type="checkbox" name="is_ev"> ⚡ Electric vehicle (EV)</label>
+      <button type="submit">🅿 Park Vehicle</button>
+    </form>
+    <hr style="border:0;border-top:1px solid #e2e8f0;margin:22px 0">
+    <form action="{{ url_for('release') }}" method="post">
+      <label for="release_number">Release a Vehicle</label>
+      <input id="release_number" name="vehicle_number" placeholder="Enter parked vehicle number" required maxlength="20">
+      <button class="release" type="submit">Release Vehicle</button>
+    </form>
+    <p class="hint">Demo note: this version uses in-memory sample data. On Vercel, changes may not persist between requests or deployments. Use a database for reliable shared parking records.</p>
+  </div>
+  <div class="card">
+    <h2>Parking Layout</h2>
+    <div class="legend"><span><i class="dot" style="background:#16a34a"></i>Available</span><span><i class="dot" style="background:#0ea5e9"></i>EV slot</span><span><i class="dot" style="background:#dc2626"></i>Occupied</span></div>
+    <div class="grid">
+    {% for slot, details in slots.items() %}
+      <div class="slot {% if details.occupied %}occupied{% elif details.ev %}ev{% else %}available{% endif %}">
+        <b>{{ slot }}</b><span>{{ details.size }}</span><small>{% if details.occupied %}OCCUPIED{% elif details.ev %}EV · AVAILABLE{% else %}AVAILABLE{% endif %}</small>
+      </div>
+    {% endfor %}
+    </div>
+    <p class="hint">Slot rules: the slot must be empty, large enough for the selected vehicle, and EV-compatible when an electric vehicle is selected.</p>
+  </div>
+</section>
+</main>
+</body>
+</html>
